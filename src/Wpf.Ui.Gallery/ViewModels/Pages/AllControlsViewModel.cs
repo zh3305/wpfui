@@ -234,6 +234,13 @@ public partial class AllControlsViewModel : ObservableObject
             },
             new()
             {
+                Name = "TabView",
+                Icon = SymbolRegular.TabDesktop24,
+                Description = "Display a set of tabs.",
+                Link = "TabView"
+            },
+            new()
+            {
                 Name = "InfoBar",
                 Icon = SymbolRegular.ErrorCircle24,
                 Description = "Inline message card.",
@@ -322,6 +329,15 @@ public partial class AllControlsViewModel : ObservableObject
                 Icon = SymbolRegular.TextFont24,
                 Description = "Control displaying a single font glyph.",
                 Link = "FontIcon"
+            },
+            #if DEBUG
+            new()
+            {
+                Name = "Expander",
+                Icon = SymbolRegular.Code24,
+                Description = "Expander control.",
+                Link = "Expander"
             }
+            #endif
         };
 }

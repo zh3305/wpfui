@@ -13,6 +13,7 @@ using Wpf.Ui.Gallery.ViewModels.Pages.Collections;
 using Wpf.Ui.Gallery.ViewModels.Pages.DateAndTime;
 using Wpf.Ui.Gallery.ViewModels.Pages.DialogsAndFlyouts;
 using Wpf.Ui.Gallery.ViewModels.Pages.Icons;
+using Wpf.Ui.Gallery.ViewModels.Pages.Layout;
 using Wpf.Ui.Gallery.ViewModels.Pages.Media;
 using Wpf.Ui.Gallery.ViewModels.Pages.Navigation;
 using Wpf.Ui.Gallery.ViewModels.Pages.StatusAndInfo;
@@ -25,6 +26,7 @@ using Wpf.Ui.Gallery.Views.Pages.Collections;
 using Wpf.Ui.Gallery.Views.Pages.DateAndTime;
 using Wpf.Ui.Gallery.Views.Pages.DialogsAndFlyouts;
 using Wpf.Ui.Gallery.Views.Pages.Icons;
+using Wpf.Ui.Gallery.Views.Pages.Layout;
 using Wpf.Ui.Gallery.Views.Pages.Media;
 using Wpf.Ui.Gallery.Views.Pages.Navigation;
 using Wpf.Ui.Gallery.Views.Pages.Samples;
@@ -130,6 +132,12 @@ public partial class App : Application
             services.AddTransient<MessageBoxPage>();
             services.AddTransient<MessageBoxViewModel>();
 
+            // Layout
+            services.AddTransient<LayoutPage>();
+            services.AddTransient<LayoutViewModel>();
+            services.AddTransient<ExpanderPage>();
+            services.AddTransient<ExpanderViewModel>();
+
             // Web View
             services.AddTransient<MediaPage>();
             services.AddTransient<MediaViewModel>();
@@ -154,6 +162,8 @@ public partial class App : Application
             services.AddTransient<NavigationViewViewModel>();
             services.AddTransient<TabControlPage>();
             services.AddTransient<TabControlViewModel>();
+            services.AddTransient<TabViewPage>();
+            services.AddTransient<TabViewViewModel>();
 
             // Multilevel navigation sample Pages
             services.AddTransient<MultilevelNavigationSample>();

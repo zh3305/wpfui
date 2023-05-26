@@ -3,7 +3,6 @@
 // Copyright (C) Leszek Pomianowski and WPF UI Contributors.
 // All Rights Reserved.
 
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -161,6 +160,31 @@ public class ContentDialog : ContentControl
     public static readonly DependencyProperty TemplateButtonCommandProperty =
         DependencyProperty.Register(nameof(TemplateButtonCommand),
             typeof(IRelayCommand), typeof(ContentDialog), new PropertyMetadata(null));
+
+
+    /// <summary>
+    /// Property for <see cref="Opened"/>.
+    /// </summary>
+    public static readonly RoutedEvent OpenedEvent = EventManager.RegisterRoutedEvent(nameof(Opened),
+        RoutingStrategy.Bubble, typeof(TypedEventHandler<ContentDialog, RoutedEventArgs>), typeof(ContentDialog));
+
+    /// <summary>
+    /// Property for <see cref="Closing"/>.
+    /// </summary>
+    public static readonly RoutedEvent ClosingEvent = EventManager.RegisterRoutedEvent(nameof(Closing),
+        RoutingStrategy.Bubble, typeof(TypedEventHandler<ContentDialog, ContentDialogClosingEventArgs>), typeof(ContentDialog));
+
+    /// <summary>
+    /// Property for <see cref="Closed"/>.
+    /// </summary>
+    public static readonly RoutedEvent ClosedEvent = EventManager.RegisterRoutedEvent(nameof(Closed),
+        RoutingStrategy.Bubble, typeof(TypedEventHandler<ContentDialog, ContentDialogClosedEventArgs>), typeof(ContentDialog));
+
+    /// <summary>
+    /// Property for <see cref="ButtonClicked"/>.
+    /// </summary>
+    public static readonly RoutedEvent ButtonClickedEvent = EventManager.RegisterRoutedEvent(nameof(ButtonClicked),
+        RoutingStrategy.Bubble, typeof(TypedEventHandler<ContentDialog, ContentDialogButtonClickEventArgs>), typeof(ContentDialog));
 
     #endregion
 
@@ -338,7 +362,7 @@ public class ContentDialog : ContentControl
     }
 
     /// <summary>
-    /// Gets or sets a value that indicates the visibility of the footer buttons
+    /// Gets or sets a value that indicates the visibility of the footer buttons.
     /// </summary>
     public bool IsFooterVisible
     {
@@ -351,6 +375,42 @@ public class ContentDialog : ContentControl
     /// </summary>
     public IRelayCommand TemplateButtonCommand => (IRelayCommand)GetValue(TemplateButtonCommandProperty);
 
+    /// <summary>
+    /// Occurs after the dialog is opened.
+    /// </summary>
+    public event TypedEventHandler<ContentDialog, RoutedEventArgs> Opened
+    {
+        add => AddHandler(OpenedEvent, value);
+        remove => RemoveHandler(OpenedEvent, value);
+    }
+
+    /// <summary>
+    /// Occurs after the dialog starts to close, but before it is closed and before the <see cref="Closed"/> event occurs.
+    /// </summary>
+    public event TypedEventHandler<ContentDialog, ContentDialogClosingEventArgs> Closing
+    {
+        add => AddHandler(ClosingEvent, value);
+        remove => RemoveHandler(ClosingEvent, value);
+    }
+
+    /// <summary>
+    /// Occurs after the dialog is closed.
+    /// </summary>
+    public event TypedEventHandler<ContentDialog, ContentDialogClosedEventArgs> Closed
+    {
+        add => AddHandler(ClosedEvent, value);
+        remove => RemoveHandler(ClosedEvent, value);
+    }
+
+    /// <summary>
+    /// Occurs after the <see cref="ContentDialogButton"/> has been tapped.
+    /// </summary>
+    public event TypedEventHandler<ContentDialog, ContentDialogButtonClickEventArgs> ButtonClicked
+    {
+        add => AddHandler(ButtonClickedEvent, value);
+        remove => RemoveHandler(ButtonClickedEvent, value);
+    }
+
     #endregion
 
     /// <summary>
@@ -361,12 +421,19 @@ public class ContentDialog : ContentControl
     {
         ContentPresenter = contentPresenter;
 
-        SetValue(TemplateButtonCommandProperty,
-            new RelayCommand<ContentDialogButton>(OnTemplateButtonClick));
+        SetValue(TemplateButtonCommandProperty, new RelayCommand<ContentDialogButton>(OnButtonClick));
+
+        Loaded += static (sender, _) =>
+        {
+            var self = (ContentDialog)sender;
+            self.OnLoaded();
+        };
     }
 
     protected readonly ContentPresenter ContentPresenter;
     protected TaskCompletionSource<ContentDialogResult>? Tcs;
+
+    #region Public methos
 
     /// <summary>
     /// Shows the dialog
@@ -377,12 +444,16 @@ public class ContentDialog : ContentControl
     public async Task<ContentDialogResult> ShowAsync(CancellationToken cancellationToken = default)
     {
         Tcs = new TaskCompletionSource<ContentDialogResult>();
-        var tokenRegistration = cancellationToken.Register(o => Tcs.TrySetCanceled((CancellationToken)o!), cancellationToken);
+        CancellationTokenRegistration tokenRegistration = cancellationToken.Register(o => Tcs.TrySetCanceled((CancellationToken)o!), cancellationToken);
+
+        ContentDialogResult result = ContentDialogResult.None;
 
         try
         {
             ContentPresenter.Content = this;
-            return await Tcs.Task;
+            result = await Tcs.Task;
+
+            return result;
         }
         finally
         {
@@ -391,83 +462,52 @@ public class ContentDialog : ContentControl
 #else
             tokenRegistration.Dispose();
 #endif
+            ContentPresenter.Content = null;
+            OnClosed(result);
         }
     }
 
     /// <summary>
-    /// Hides the dialog
+    /// Hides the dialog with result
     /// </summary>
-    public virtual void Hide()
+    public virtual void Hide(ContentDialogResult result = ContentDialogResult.None)
     {
-        ContentPresenter.Content = null;
-    }
-
-    protected override void OnInitialized(EventArgs e)
-    {
-        base.OnInitialized(e);
-
-        Loaded += static (sender, _) =>
+        ContentDialogClosingEventArgs closingEventArgs = new ContentDialogClosingEventArgs(ClosingEvent, this)
         {
-            var self = (ContentDialog)sender;
-
-            if (self.VisualChildrenCount <= 0 || self.GetVisualChild(0) is not UIElement frameworkElement)
-                return;
-
-            self.ResizeToContentSize(frameworkElement);
-            self.Focus();
+            Result = result
         };
+
+        RaiseEvent(closingEventArgs);
+
+        if (!closingEventArgs.Cancel)
+            Tcs?.TrySetResult(result);
     }
 
+    #endregion
+
+    #region Protected methods
+
     /// <summary>
-    /// Sets <see cref="DialogWidth"/> and <see cref="DialogHeight"/>
+    /// Occurs after ContentPresenter.Content = null
     /// </summary>
-    /// <param name="content"></param>
-    protected virtual void ResizeToContentSize(UIElement content)
+    protected virtual void OnClosed(ContentDialogResult result)
     {
-        var paddingWidth = Padding.Left + Padding.Right;
+        ContentDialogClosedEventArgs closedEventArgs =
+            new ContentDialogClosedEventArgs(ClosingEvent, this) { Result = result };
 
-        var marginHeight = DialogMargin.Bottom + DialogMargin.Top;
-        var marginWidth = DialogMargin.Left + DialogMargin.Right;
-
-        DialogWidth = content.DesiredSize.Width - marginWidth + paddingWidth;
-        DialogHeight = content.DesiredSize.Height - marginHeight;
-
-        while (true)
-        {
-            if (DialogWidth <= DialogMaxWidth && DialogHeight <= DialogMaxHeight)
-                return;
-
-            if (DialogWidth > DialogMaxWidth)
-            {
-                DialogWidth = DialogMaxWidth;
-                content.UpdateLayout();
-
-                DialogHeight = content.DesiredSize.Height;
-            }
-
-            if (DialogHeight > DialogMaxHeight)
-            {
-                DialogHeight = DialogMaxHeight;
-                content.UpdateLayout();
-
-                DialogWidth = content.DesiredSize.Width;
-            }
-        }
+        RaiseEvent(closedEventArgs);
     }
 
     /// <summary>
     /// Occurs after the <see cref="ContentDialogButton"/> is clicked 
     /// </summary>
     /// <param name="button"></param>
-    /// <returns>
-    /// 
-    /// </returns>
-    protected virtual bool OnButtonClick(ContentDialogButton button) { return true; }
-
-    private void OnTemplateButtonClick(ContentDialogButton button)
+    protected virtual void OnButtonClick(ContentDialogButton button)
     {
-        if (!OnButtonClick(button))
-            return;
+        ContentDialogButtonClickEventArgs buttonClickEventArgs =
+            new ContentDialogButtonClickEventArgs(ButtonClickedEvent, this) { Button = button };
+
+        RaiseEvent(buttonClickEventArgs);
 
         ContentDialogResult result = button switch
         {
@@ -476,7 +516,91 @@ public class ContentDialog : ContentControl
             _ => ContentDialogResult.None
         };
 
-        Hide();
-        Tcs?.TrySetResult(result);
+        Hide(result);
     }
+
+    #endregion
+
+    #region Base methods
+
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        var rootElement = (UIElement) GetVisualChild(0)!;
+
+        rootElement.Measure(availableSize);
+        Size desiredSize = rootElement.DesiredSize;
+
+        Size newSize = GetNewDialogSize(desiredSize);
+
+        DialogHeight = newSize.Height;
+        DialogWidth = newSize.Width;
+
+        ResizeWidth(rootElement);
+        ResizeHeight(rootElement);
+
+        return desiredSize;
+    }
+
+    /// <summary>
+    /// Occurs after Loaded event
+    /// </summary>
+    protected virtual void OnLoaded()
+    {
+        Focus();
+
+        RaiseEvent(new RoutedEventArgs(OpenedEvent));
+    }
+
+    #endregion
+
+    #region Resize private methods
+
+    private Size GetNewDialogSize(Size desiredSize)
+    {
+        var paddingWidth = Padding.Left + Padding.Right;
+
+        var marginHeight = DialogMargin.Bottom + DialogMargin.Top;
+        var marginWidth = DialogMargin.Left + DialogMargin.Right;
+
+        var width = desiredSize.Width - marginWidth + paddingWidth;
+        var height = desiredSize.Height - marginHeight;
+
+        return new Size(width, height);
+    }
+
+    private void ResizeWidth(UIElement element)
+    {
+        if (DialogWidth <= DialogMaxWidth)
+            return;
+
+        DialogWidth = DialogMaxWidth;
+        element.UpdateLayout();
+
+        DialogHeight = element.DesiredSize.Height;
+
+        if (DialogHeight > DialogMaxHeight)
+        {
+            DialogMaxHeight = DialogHeight;
+            //Debug.WriteLine($"DEBUG | {GetType()} | WARNING | DialogHeight > DialogMaxHeight after resizing width!");
+        }
+    }
+
+    private void ResizeHeight(UIElement element)
+    {
+        if (DialogHeight <= DialogMaxHeight)
+            return;
+
+        DialogHeight = DialogMaxHeight;
+        element.UpdateLayout();
+
+        DialogWidth = element.DesiredSize.Width;
+
+        if (DialogWidth > DialogMaxWidth)
+        {
+            DialogMaxWidth = DialogWidth;
+            //Debug.WriteLine($"DEBUG | {GetType()} | WARNING | DialogWidth > DialogMaxWidth after resizing height!");
+        }
+    }
+
+    #endregion
 }
