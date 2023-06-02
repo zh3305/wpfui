@@ -3,8 +3,11 @@
 // Copyright (C) Leszek Pomianowski and WPF UI Contributors.
 // All Rights Reserved.
 
+using System.Collections.Specialized;
+using System;
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using Wpf.Ui.Controls.IconElements;
 
@@ -31,5 +34,26 @@ public class TreeViewItem : System.Windows.Controls.TreeViewItem
         get => (IconElement)GetValue(IconProperty);
         set => SetValue(IconProperty, value);
     }
-}
 
+
+    internal ItemsControl ParentItemsControl => ItemsControl.ItemsControlFromItemContainer((DependencyObject)this);
+
+    internal TreeView ParentTreeView
+    {
+        get
+        {
+            for (ItemsControl container = this.ParentItemsControl; container != null; container = ItemsControl.ItemsControlFromItemContainer((DependencyObject)container))
+            {
+                if (container is TreeView parentTreeView)
+                    return parentTreeView;
+            }
+            return (TreeView)null;
+        }
+    }
+
+    internal TreeViewItem ParentTreeViewItem => ParentItemsControl as TreeViewItem;
+
+    protected override DependencyObject GetContainerForItemOverride() => (DependencyObject)new TreeViewItem();
+
+    protected override bool IsItemItsOwnContainerOverride(object item) => item is TreeViewItem;
+}

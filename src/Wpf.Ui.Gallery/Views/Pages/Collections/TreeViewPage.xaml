@@ -69,6 +69,59 @@
                             &lt;/TreeView&gt;
                         </controls:GalleryControlPresenter.CodeText>
                     </controls:GalleryControlPresenter>
+
+
+                    <controls:GalleryControlPresenter
+                        Grid.Row="1"
+                        Margin="0"
+                        HeaderText="Wpf Ui TreeView.">
+                        <controls:GalleryControlPresenter.Content>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ui:DynamicScrollViewer
+                                    MaxHeight="100"
+                                    Margin="0">
+
+                                <ui:TreeView AllowDrop="True" ScrollViewer.CanContentScroll="False" ItemsSource="{Binding ViewModel.TreeInfo}"
+                                      x:Name="UiTreeView" >
+                                    <TreeView.ItemTemplate>
+                                        <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                                            <TextBlock Text="{Binding NodeName}"/>
+                                        </HierarchicalDataTemplate>
+                                    </TreeView.ItemTemplate>
+                                    <!-- <ui:TreeViewItem -->
+                                    <!--     Header="Work Documents" -->
+                                    <!--     Icon="{ui:SymbolIcon AccessTime24}" -->
+                                    <!--     IsExpanded="True" -->
+                                    <!--     IsSelected="True"> -->
+                                    <!--     <ui:TreeViewItem Header="Feature Schedule" -->
+                                    <!--                      Icon="{ui:SymbolIcon  AlignCenterVertical48}" /> -->
+                                    <!--     <ui:TreeViewItem Header="Overall Project Plan" -->
+                                    <!--                      Icon="{ui:SymbolIcon  Save24}" /> -->
+                                    <!-- </ui:TreeViewItem> -->
+                                    <!-- <ui:TreeViewItem Header="Personal Documents"> -->
+                                    <!--     <ui:TreeViewItem Header="Contractor contact info" /> -->
+                                    <!--     <ui:TreeViewItem Header="Home Remodel"> -->
+                                    <!--         <ui:TreeViewItem Header="Paint Color Scheme" /> -->
+                                    <!--         <ui:TreeViewItem Header="Flooring Woodgrain Type" /> -->
+                                    <!--         <ui:TreeViewItem Header="Kitchen Cabinet Style" /> -->
+                                    <!--     </ui:TreeViewItem> -->
+                                    <!-- </ui:TreeViewItem> -->
+                                    </ui:TreeView>
+                                </ui:DynamicScrollViewer>
+                            </Grid>
+                        </controls:GalleryControlPresenter.Content>
+                        <controls:GalleryControlPresenter.CodeText>
+                            &lt;ui:TreeView AllowDrop=&quot;True&quot;&gt;\n
+                            \t&lt;ui:TreeViewItem Header=&quot;Work Documents&quot; IsExpanded=&quot;True&quot;&gt;\n
+                            \t\t&lt;ui:TreeViewItem Header=&quot;Feature Schedule&quot;/&gt;\n
+                            \t&lt;/ui:TreeViewItem&gt;\n
+                            &lt;/ui:TreeView&gt;
+                        </controls:GalleryControlPresenter.CodeText>
+                    </controls:GalleryControlPresenter>
                 </Grid>
             </Grid>
         </ui:DynamicScrollViewer>

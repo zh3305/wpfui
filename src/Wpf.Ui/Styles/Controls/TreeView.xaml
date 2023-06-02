@@ -70,5 +70,6 @@
     </Style>
 
     <Style BasedOn="{StaticResource DefaultTreeViewStyle}" TargetType="{x:Type TreeView}" />
+    <Style BasedOn="{StaticResource DefaultTreeViewStyle}" TargetType="{x:Type controls:TreeView}" />
 
 </ResourceDictionary>
