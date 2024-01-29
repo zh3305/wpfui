@@ -9,7 +9,6 @@ namespace RtfDocumentProcessors
     using System.Composition;
     using System.Threading.Tasks;
     using System.Threading.Tasks.Schedulers;
-
     using MarkupConverter;
     using Microsoft.DocAsCode.Plugins;
 
@@ -22,9 +21,7 @@ namespace RtfDocumentProcessors
         public void Build(FileModel model, IHostService host)
         {
             string content = (string)((Dictionary<string, object>)model.Content)["conceptual"];
-            content = _taskFactory
-                .StartNew(() => RtfToHtmlConverter.ConvertRtfToHtml(content))
-                .Result;
+            content = _taskFactory.StartNew(() => RtfToHtmlConverter.ConvertRtfToHtml(content)).Result;
             ((Dictionary<string, object>)model.Content)["conceptual"] = content;
         }
         #endregion

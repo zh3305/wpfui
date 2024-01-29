@@ -11,7 +11,6 @@ namespace RtfDocumentProcessors
     using System.Linq;
     using System.Web;
     using System.Xml.Linq;
-
     using Microsoft.DocAsCode.Plugins;
     using Microsoft.DocAsCode.Utility;
 
@@ -87,11 +86,7 @@ namespace RtfDocumentProcessors
         #endregion
 
         #region FixLink
-        private static void FixLink(
-            XAttribute link,
-            RelativePath filePath,
-            HashSet<string> linkToFiles
-        )
+        private static void FixLink(XAttribute link, RelativePath filePath, HashSet<string> linkToFiles)
         {
             string linkFile;
             string anchor = null;
